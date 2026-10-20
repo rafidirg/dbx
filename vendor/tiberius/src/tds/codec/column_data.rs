@@ -1637,7 +1637,7 @@ mod tests {
         test_round_trip(
             TypeInfo::Xml {
                 schema: None,
-                size: 0xfffffffffffffffe_usize,
+                size: usize::MAX - 1,
             },
             ColumnData::Xml(Some(Cow::Owned(XmlData::new("<a>ddd</a>")))),
         )
@@ -1650,7 +1650,7 @@ mod tests {
         test_round_trip(
             TypeInfo::Xml {
                 schema: None,
-                size: 0xfffffffffffffffe_usize,
+                size: usize::MAX - 1,
             },
             ColumnData::Xml(None),
         )

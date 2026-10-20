@@ -1,5 +1,7 @@
 [CmdletBinding()]
 param(
+  [ValidateSet("x64", "x86")]
+  [string]$Architecture = "x64",
   [string]$RuntimeDirectory = (Join-Path $PSScriptRoot "..\..\src-tauri\webview2-fixed-runtime"),
   [string]$DownloadDirectory = $env:RUNNER_TEMP
 )
@@ -8,10 +10,17 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $runtimeVersion = "109.0.1518.78"
-$runtimeFolderName = "Microsoft.WebView2.FixedVersionRuntime.$runtimeVersion.x64"
+if ($Architecture -eq "x86") {
+  $runtimeFolderName = "Microsoft.WebView2.FixedVersionRuntime.$runtimeVersion.x86"
+  # Hash derived from the authenticated Microsoft-signed 109.0.1518.78 x86
+  # fixed-runtime archive (signature Valid, CN=Microsoft Corporation).
+  $runtimeSha256 = "c507e0df03fe941f6669b74faf713545708653d568d1dce1e683cbe707382253"
+} else {
+  $runtimeFolderName = "Microsoft.WebView2.FixedVersionRuntime.$runtimeVersion.x64"
+  $runtimeSha256 = "7622281cf83de1a35e3a471f432f7a897d65f0a7d3975df08512b7b253dd45c7"
+}
 $archiveName = "$runtimeFolderName.cab"
 $runtimeUrl = "https://github.com/westinyang/WebView2RuntimeArchive/releases/download/$runtimeVersion/$archiveName"
-$runtimeSha256 = "7622281cf83de1a35e3a471f432f7a897d65f0a7d3975df08512b7b253dd45c7"
 
 if ([string]::IsNullOrWhiteSpace($RuntimeDirectory)) {
   throw "A WebView2 fixed runtime directory is required."
@@ -31,7 +40,7 @@ if (Test-Path $archivePath) {
 }
 
 if (!(Test-Path $archivePath)) {
-  Write-Host "Downloading WebView2 fixed runtime $runtimeVersion for Windows 7..."
+  Write-Host "Downloading WebView2 fixed runtime $runtimeVersion $Architecture for Windows 7..."
   Invoke-WebRequest -Uri $runtimeUrl -OutFile $archivePath
 }
 
@@ -49,7 +58,7 @@ if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid 
   throw "WebView2 fixed runtime does not have a valid Microsoft signature."
 }
 
-$extractDirectory = Join-Path $DownloadDirectory "dbx-webview2-fixed-runtime-$runtimeVersion"
+$extractDirectory = Join-Path $DownloadDirectory "dbx-webview2-fixed-runtime-$runtimeVersion-$Architecture"
 if (Test-Path $extractDirectory) {
   Remove-Item -LiteralPath $extractDirectory -Recurse -Force
 }
@@ -73,4 +82,4 @@ if (Test-Path $RuntimeDirectory) {
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $RuntimeDirectory) | Out-Null
 Move-Item -LiteralPath $extractedRuntime -Destination $RuntimeDirectory
 
-Write-Host "Prepared WebView2 fixed runtime $runtimeVersion at $RuntimeDirectory"
+Write-Host "Prepared WebView2 fixed runtime $runtimeVersion $Architecture at $RuntimeDirectory"

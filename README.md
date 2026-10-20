@@ -566,6 +566,30 @@ sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev 
 
 No additional dependencies required.
 
+#### Windows 7 SP1, 32-bit release
+
+Build on a modern Windows host with Visual Studio 2022 C++ build tools, NASM,
+CMake, and native Strawberry Perl on `PATH` (Git's Perl is insufficient).
+Install `nightly-2026-06-16` with the `rust-src` component, then run:
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm build
+./.github/scripts/prepare-webview2-win7-loader.ps1 -Architecture x86
+./.github/scripts/prepare-webview2-win7-runtime.ps1 -Architecture x86 -RuntimeDirectory "$PWD/src-tauri/webview2-fixed-runtime"
+$env:RUSTFLAGS = "-C target-feature=+crt-static"
+$env:TAURI_CONFIG = Get-Content src-tauri/tauri.webview2-win7-fixed.conf.json -Raw
+cargo +nightly-2026-06-16 build --locked --package dbx --release --features custom-protocol --target i686-win7-windows-msvc -Z build-std=std,panic_abort
+./.github/scripts/assert-win7-pe-compat.ps1 -BinaryPath target/i686-win7-windows-msvc/release/dbx.exe
+./.github/scripts/assert-webview2-win7-loader.ps1 -BinaryPath target/i686-win7-windows-msvc/release/dbx.exe
+pnpm tauri bundle --bundles nsis --target i686-win7-windows-msvc --config src-tauri/tauri.webview2-win7-fixed.conf.json --config .github/fixtures/win7-nsis-zlib-config.json
+```
+
+The offline installer is written to
+`target/i686-win7-windows-msvc/release/bundle/nsis/` and includes x86 WebView2
+109. External driver agents need their own compatible 32-bit releases.
+Full release LTO can remain silent while using one CPU core for an extended period.
+
 ### Development
 
 ```bash

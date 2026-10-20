@@ -1,5 +1,7 @@
 [CmdletBinding()]
-param()
+param(
+  [ValidateSet("x64", "x86")][string]$Architecture = "x64"
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -7,16 +9,24 @@ $ErrorActionPreference = "Stop"
 # The Windows 7 / Server 2012 R2 bundle links the static loader from WebView2 SDK
 # 1.0.902.49. Loaders >= 1.0.1054.31 import EventSetInformation, which Win7 and
 # Server 2012 R2 do not provide, and fail with "Could not find the WebView2
-# Runtime". The loader lives in vendor/webview2-com-sys/win7/x64/ and Cargo links
-# it through the [patch.crates-io] entry. This script verifies the committed
+# Runtime". The loader lives in vendor/webview2-com-sys/win7/<architecture>/ and
+# Cargo links it through the [patch.crates-io] entry. This script verifies the
 # loader and stages the loader DLL for the runtime probe. It does not modify the
 # Cargo registry, so compile caches stay correct.
 $sdkVersion = "1.0.902.49"
-$loaderSha256 = "aa5c26670f1b18d0fa2a56ac3f1ae30110c332a8bfbd555a7be3e548d1b0da3d"
-$loaderDllSha256 = "fdf978ba706578b05967d7f0181f462147864a5aa74f36016a62cb3d3dbe6909"
+switch ($Architecture) {
+  "x64" {
+    $loaderSha256 = "aa5c26670f1b18d0fa2a56ac3f1ae30110c332a8bfbd555a7be3e548d1b0da3d"
+    $loaderDllSha256 = "fdf978ba706578b05967d7f0181f462147864a5aa74f36016a62cb3d3dbe6909"
+  }
+  "x86" {
+    $loaderSha256 = "328b573a4d342007078140eb7fa4fb3aeaba804e29dae1361c9733b115580ad2"
+    $loaderDllSha256 = "49c0650616eadfa63394558cd1d3ed9f64918d5ed38ab3ef32ad0249283df0ef"
+  }
+}
 
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
-$loaderDirectory = Join-Path $repositoryRoot "vendor/webview2-com-sys/win7/x64"
+$loaderDirectory = Join-Path $repositoryRoot "vendor/webview2-com-sys/win7/$Architecture"
 $loaderPath = Join-Path $loaderDirectory "WebView2LoaderStatic.lib"
 $loaderDllPath = Join-Path $loaderDirectory "WebView2Loader.dll"
 
